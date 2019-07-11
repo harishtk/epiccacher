@@ -5,7 +5,6 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.hitasoft.epiccacher.interfaces.Cache;
 import com.jakewharton.disklrucache.DiskLruCache;
 
 import java.io.File;
@@ -17,7 +16,7 @@ import java.security.NoSuchAlgorithmException;
 public class CacheManager {
    public static final String TAG = CacheManager.class.getSimpleName();
 
-   private Cache<String, String> mCache;
+   private DiskCache mCache;
    private DiskLruCache mDiskLruCache;
    private final Context mContext;
 
@@ -27,8 +26,8 @@ public class CacheManager {
       mCache = DiskCache.getInstanceUsingDoubleLocking(mDiskLruCache);
    }
 
-   public void setUp() throws IOException {
-      File cacheInFiles = mContext.getFilesDir();
+   private void setUp() throws IOException {
+      File cacheInFiles = mContext.getCacheDir();
       int version = BuildConfig.VERSION_CODE;
 
       int KB = 1024;
@@ -38,7 +37,7 @@ public class CacheManager {
       mDiskLruCache = DiskLruCache.open(cacheInFiles, version, 1, cahceSize);
    }
 
-   public Cache<String, String> getCache() {
+   public DiskCache getCache() {
       return mCache;
    }
 
@@ -91,13 +90,28 @@ public class CacheManager {
 
       @Override
       public String remove(String key) {
-         // Todo: implement remove
-         return null;
+         String it = null;
+         try {
+            if (mDiskLruCache != null) {
+               DiskLruCache.Snapshot snapshot = mDiskLruCache.get(getMd5Hash(key));
+               if (snapshot != null) it = snapshot.getString(0);
+               return it;
+            }
+         } catch (IOException e) {
+            e.printStackTrace();
+         }
+         return it;
       }
 
       @Override
       public void clear() {
-         // Todo: implement clear
+         try {
+            if (mDiskLruCache != null) {
+               mDiskLruCache.delete();
+            }
+         } catch (IOException e) {
+            e.printStackTrace();
+         }
       }
 
       static String getMd5Hash(String input) {
@@ -115,5 +129,16 @@ public class CacheManager {
             return null;
          }
       }
+   }
+
+   public interface Cache<K, V> {
+
+      void put(K key, V value);
+
+      V get(K key);
+
+      V remove(K key);
+
+      void clear();
    }
 }

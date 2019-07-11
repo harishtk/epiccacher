@@ -1,5 +1,7 @@
 package com.hitasoft.epiccacher;
 
+import android.content.Context;
+
 import java.io.IOException;
 
 import okhttp3.Interceptor;
@@ -10,7 +12,16 @@ public class CacheInterceptor {
 
     private CacheManager mCacheManager;
 
+    public CacheInterceptor(Context context) throws IOException {
+        mCacheManager = new CacheManager(context);
+    }
+
     public boolean isCacheHit(String key) {
         return mCacheManager.getCache().get(key) != null;
     }
+
+    public CacheManager getCacheManager() {
+        return mCacheManager;
+    }
+
 }
